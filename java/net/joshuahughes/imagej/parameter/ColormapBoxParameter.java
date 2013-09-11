@@ -14,7 +14,7 @@ import net.joshuahughes.imagej.JHLabsPlugin;
 import com.jhlabs.image.Colormap;
 
 
-public class ColormapBoxParameter extends JComboBox implements Parameter<Colormap,JComboBox>{
+public class ColormapBoxParameter extends JComboBox implements Parameter{
 	private static final long serialVersionUID = 726104080593868769L;
 	public ColormapBoxParameter(String name){
 		setName(name);

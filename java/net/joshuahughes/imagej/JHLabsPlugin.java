@@ -1,20 +1,6 @@
 package net.joshuahughes.imagej;
 
-import ij.ImagePlus;
-import ij.ImageStack;
-import ij.plugin.filter.ExtendedPlugInFilter;
-import ij.plugin.filter.PlugInFilter;
-import ij.plugin.filter.PlugInFilterRunner;
-import ij.process.ImageProcessor;
-
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.Paint;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.BufferedImageOp;
 import java.lang.reflect.Constructor;
@@ -28,16 +14,6 @@ import java.util.LinkedHashSet;
 import java.util.Map.Entry;
 import java.util.Vector;
 
-import javax.swing.DefaultListModel;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.ListCellRenderer;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-
 import net.joshuahughes.imagej.parameter.BooleanBoxParameter;
 import net.joshuahughes.imagej.parameter.ColormapBoxParameter;
 import net.joshuahughes.imagej.parameter.NumberSpinnerParameter;
@@ -49,16 +25,8 @@ import org.reflections.Reflections;
 
 import com.jhlabs.image.Colormap;
 
-public class JHLabsPlugin implements ExtendedPlugInFilter,ActionListener{
-	int FLAGS = PlugInFilter.DOES_ALL;
-
-	private LinkedHashMap<BufferedImageOp,JPanel> pnlMap = new LinkedHashMap<BufferedImageOp,JPanel>();
-	private LinkedHashMap<BufferedImageOp,LinkedHashSet<Parameter<?,?>>> cmpSet = new LinkedHashMap<BufferedImageOp,LinkedHashSet<Parameter<?,?>>>();
-	private JDialog jaiDlg = new JDialog();
-	private JList list = new JList();
-	private ImagePlus source;
-	private ImagePlus result = new ImagePlus("Result");
-	private Parameter<?,?> get(Method method,Object obj) {
+public class JHLabsPlugin extends AbstractPlugin<BufferedImageOp>{
+	private Parameter get(Method method,Object obj) {
 		String loName = Character.toLowerCase(method.getName().charAt(3))+method.getName().substring(4, method.getName().length());
 		method.setAccessible(true);
 		try {
@@ -105,113 +73,11 @@ public class JHLabsPlugin implements ExtendedPlugInFilter,ActionListener{
 		}
 		return vector;
 	}
-	@Override
-	public int setup(String arg, ImagePlus imp) {
-		return FLAGS;
-	}
-	@Override
-	public void run(ImageProcessor ip) {
-
-	}
-	@Override
-	public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-		this.source = imp;
-		Vector<BufferedImageOp> biOps = getAll("com.jhlabs",BufferedImageOp.class);
-		Collections.sort(biOps,new Comparator<BufferedImageOp>(){
-			public int compare(BufferedImageOp o1, BufferedImageOp o2) {
-				return o1.getClass().getSimpleName().compareTo(o2.getClass().getSimpleName());
-			}});
-		DefaultListModel model = new DefaultListModel();
-		for(BufferedImageOp op : biOps){
-			model.addElement(op);
-			JPanel pnl = new JPanel(new GridBagLayout());
-			pnlMap.put(op,pnl);
-			cmpSet.put(op,new LinkedHashSet<Parameter<?,?>>());
-			LinkedHashMap<String,Method> methodNameMap = new LinkedHashMap<String,Method>();
-			for(Method m : op.getClass().getMethods())
-				methodNameMap.put(m.getName(),m);
-			GridBagConstraints gbc = new GridBagConstraints();
-			gbc.gridx=gbc.gridy=0;
-			gbc.weightx=gbc.weighty=1;
-			for(Entry<String, Method> e : methodNameMap.entrySet())
-				if(e.getKey().startsWith("get") && e.getValue().getParameterTypes().length == 0){
-					if(methodNameMap.keySet().contains("s"+e.getKey().substring(1, e.getKey().length()))){
-						Parameter<?,?> parameter = get(e.getValue(),op);
-						if(parameter != null){
-							parameter.addActionListener(this);
-							cmpSet.get(op).add(parameter);
-							pnl.add(new JLabel(parameter.getName()),gbc);
-							gbc.gridx++;
-							pnl.add(parameter.getComponent(),gbc);
-							gbc.gridy++;
-							gbc.gridx=0;
-						}
-					}
-				}
-		}
-		list.setModel(model);
-		jaiDlg.getContentPane().setLayout(new BorderLayout());
-		jaiDlg.getContentPane().add(new JScrollPane(list),BorderLayout.WEST);
-		jaiDlg.getContentPane().add(new JPanel(),BorderLayout.CENTER);
-		jaiDlg.setSize(500,500);
-		list.addListSelectionListener(new ListSelectionListener(){
-			@Override
-			public void valueChanged(ListSelectionEvent e) {
-				actionPerformed(new ActionEvent(e.getSource(),ActionEvent.ACTION_FIRST,e.toString()));
-			}
-		});
-		list.setCellRenderer(new ListCellRenderer(){
-			@Override
-			public Component getListCellRendererComponent(JList list,
-					Object value, int index, boolean isSelected,
-					boolean cellHasFocus) {
-				JLabel lbl = new JLabel(value.getClass().getSimpleName());
-				lbl.setOpaque(true);
-				lbl.setBackground(isSelected?Color.gray:lbl.getBackground());
-				return lbl;
-			}});
-		list.addListSelectionListener(new ListSelectionListener(){
-			public void valueChanged(ListSelectionEvent e) {
-				if(e.getValueIsAdjusting()) return;
-				jaiDlg.getContentPane().removeAll();
-				jaiDlg.getContentPane().add(new JScrollPane(list),BorderLayout.WEST);
-				jaiDlg.getContentPane().add(pnlMap.get(list.getSelectedValue()),BorderLayout.CENTER);
-				jaiDlg.getContentPane().validate();
-				jaiDlg.repaint();
-				list.requestFocus();
-			}
-		});
-		list.setSelectedIndex(0);
-		jaiDlg.setVisible(true);
-		return FLAGS;
-	}
-	@Override
-	public void setNPasses(int nPasses) {
-
-	}
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		BufferedImageOp op = (BufferedImageOp) list.getSelectedValue();
-		setFields(op);
-		if(source == null) return;
-		ImageStack resultStack = new ImageStack(source.getStack().getProcessor(1).getWidth(),source.getStack().getProcessor(1).getHeight());
-		for(int imgNdx=1;imgNdx<=source.getStack().getSize();imgNdx++){
-			BufferedImage resultImg = op.filter(source.getStack().getProcessor(imgNdx).getBufferedImage(),null);
-			resultStack.addSlice(new ImagePlus("image:"+imgNdx,resultImg).getChannelProcessor());
-		}
-		result.setStack("JH Labs Result",resultStack);
-		if(result.isVisible())
-			result.repaintWindow();
-		else
-			result.show();
-
-	}
 	private void setFields(BufferedImageOp op) {
-
 		LinkedHashMap<String,Method> methodMap = new LinkedHashMap<String,Method>();
 		for(Method method : op.getClass().getMethods())
 			methodMap.put(method.getName(),method);
-		for(Parameter<?,?> parameter : cmpSet.get(op)){
+		for(Parameter parameter : parameterMap.get(op)){
 			String setMethodName = "set"+Character.toUpperCase(parameter.getName().charAt(0))+parameter.getName().substring(1);
 			Method method = methodMap.get(setMethodName);
 			try {
@@ -223,6 +89,39 @@ public class JHLabsPlugin implements ExtendedPlugInFilter,ActionListener{
 	}
 	public static void main(String[] args){
 		new JHLabsPlugin().showDialog(null,null,null);
+	}
+	@Override
+	protected String getName(BufferedImageOp t) {
+		return t.getClass().getSimpleName();
+	}
+	@Override
+	protected BufferedImage getImage(BufferedImage image, BufferedImageOp t,LinkedHashSet<Parameter> list) {
+		setFields(t);
+		return t.filter(image,null);
+	}
+	@Override
+	protected LinkedHashMap<BufferedImageOp, LinkedHashSet<Parameter>> getMap() {
+		LinkedHashMap<BufferedImageOp, LinkedHashSet<Parameter>> map = new LinkedHashMap<BufferedImageOp, LinkedHashSet<Parameter>>();
+		Vector<BufferedImageOp> biOps = getAll("com.jhlabs",BufferedImageOp.class);
+		Collections.sort(biOps,new Comparator<BufferedImageOp>(){
+			public int compare(BufferedImageOp o1, BufferedImageOp o2) {
+				return o1.getClass().getSimpleName().compareTo(o2.getClass().getSimpleName());
+			}});
+		for(BufferedImageOp op : biOps){
+			map.put(op,new LinkedHashSet<Parameter>());
+			LinkedHashMap<String,Method> methodNameMap = new LinkedHashMap<String,Method>();
+			for(Method m : op.getClass().getMethods())
+				methodNameMap.put(m.getName(),m);
+			for(Entry<String, Method> e : methodNameMap.entrySet())
+				if(e.getKey().startsWith("get") && e.getValue().getParameterTypes().length == 0){
+					if(methodNameMap.keySet().contains("s"+e.getKey().substring(1, e.getKey().length()))){
+						Parameter parameter = get(e.getValue(),op);
+						if(parameter != null)
+							map.get(op).add(parameter);
+					}
+				}
+		}
+		return map;
 	}
 
 }

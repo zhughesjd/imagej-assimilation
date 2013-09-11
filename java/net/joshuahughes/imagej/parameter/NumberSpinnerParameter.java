@@ -9,7 +9,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 
-public class NumberSpinnerParameter<N extends Number>  extends JSpinner implements Parameter<N,JSpinner>{
+public class NumberSpinnerParameter<N extends Number>  extends JSpinner implements Parameter{
 	private static enum Type{min,max,increment}
 	private static final long serialVersionUID = 4948588021187942429L;
 	SpinnerNumberModel model;

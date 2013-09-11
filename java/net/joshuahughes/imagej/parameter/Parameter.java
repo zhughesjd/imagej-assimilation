@@ -1,12 +1,11 @@
 package net.joshuahughes.imagej.parameter;
 
+import java.awt.Component;
 import java.awt.event.ActionListener;
 
-import javax.swing.JComponent;
-
-public interface Parameter<T,C extends JComponent> {
+public interface Parameter {
 	public String getName();
-	public T getCurrentValue();
-	public C getComponent();
+	public Object getCurrentValue();
+	public Component getComponent();
 	public void addActionListener(ActionListener al);
 }

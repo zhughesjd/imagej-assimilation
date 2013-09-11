@@ -8,5 +8,6 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="C:/projects/java/jar/hipr2.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

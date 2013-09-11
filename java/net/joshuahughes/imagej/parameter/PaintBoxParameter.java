@@ -15,7 +15,7 @@ import javax.swing.JList;
 import javax.swing.ListCellRenderer;
 
 
-public class PaintBoxParameter extends JComboBox implements Parameter<Paint,JComboBox>{
+public class PaintBoxParameter extends JComboBox implements Parameter{
 	private static final long serialVersionUID = 726104080593868769L;
 	LinkedHashMap<String,Paint> paintMap = new LinkedHashMap<String,Paint>();
 	@SuppressWarnings("unchecked")

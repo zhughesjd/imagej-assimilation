@@ -39,11 +39,13 @@ import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
 
 public class HIPR2Plugin extends AbstractPlugin<Method>{
-	//	public static LinkedHashSet<Class<?>> imageClassArray = new LinkedHashSet<Class<?>>(Arrays.<Class<?>>asList(int[].class,int[][].class,double[].class,double[][].class,BinaryFast.class,TwoImages.class,TwoDArray.class));
 	public static LinkedHashSet<Class<?>> imageClassArray = new LinkedHashSet<Class<?>>(Arrays.<Class<?>>asList(int[].class,int[][].class,double[].class,double[][].class,BinaryFast.class));
+	public static List<String> widthNames = Arrays.asList("width","orig_w","w");
+	public static List<String> heightNames = Arrays.asList("height","orig_h","h");
+	public static List<String> invalidMethodNames = Arrays.asList("distanceSingleIteration","apply_boundary","percentile_stretch","shrink_sample","shrink_average");
 	@Override
-	protected String getName(Method t) {
-		return t.getDeclaringClass().getSimpleName()+"."+t.getName();
+	protected String getName(Method method) {
+		return method.getDeclaringClass().getSimpleName()+"."+method.getName();
 	}
 	@Override
 	protected LinkedHashMap<Method,List<Parameter>> getMap() {
@@ -82,10 +84,8 @@ public class HIPR2Plugin extends AbstractPlugin<Method>{
 
 	private boolean isValid(Method method) {
 		if(Modifier.isPrivate(method.getModifiers())) return false;
-		// TODO these methods may have a bug.
-		if(method.getName().equals("distanceSingleIteration")) return false;
-		if(method.getName().equals("apply_boundary"))return false;
-		if(method.getName().equals("percentile_stretch"))return false;
+		// TODO these methods may have a bug or need to be looked at further
+		if(invalidMethodNames.contains(method.getName())) return false;
 
 		if(!imageClassArray.contains(method.getReturnType()))return false;
 		if(method.getParameterTypes().length < 1) return false;
@@ -110,7 +110,7 @@ public class HIPR2Plugin extends AbstractPlugin<Method>{
 					for(int ndx=1;ndx<method.getParameterTypes().length;ndx++){
 						Class<?> pClass = method.getParameterTypes()[ndx];
 						String name = nameList.get(ndx); 
-						if(name.equals("width") || name.equals("w") || name.equals("height") || name.equals("h")){
+						if(widthNames.contains(name) || heightNames.contains(name)){
 							list.add(new LabelParameter(name,"not adjustable"));
 							continue;
 						}
@@ -153,9 +153,9 @@ public class HIPR2Plugin extends AbstractPlugin<Method>{
 			values[ndx++] = fromBufferedImage(image,method.getParameterTypes()[0]);
 			for(Parameter parameter : list){
 				Object value = parameter.getCurrentValue();
-				if(parameter.getName().equals("width") || parameter.getName().equals("w"))
+				if(widthNames.contains(parameter.getName()))
 					value = image.getWidth();
-				if(parameter.getName().equals("height") || parameter.getName().equals("h"))
+				if(heightNames.contains(parameter.getName()))
 					value = image.getHeight();
 				values[ndx++] = value;				
 			}

@@ -20,5 +20,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="resources/libs/hipr2.jar"/>
+	<classpathentry kind="lib" path="c2jruntime.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

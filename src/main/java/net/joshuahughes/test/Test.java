@@ -12,7 +12,7 @@ public class Test {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		float[][] matrix = line(100,100,90,10,50,95,0);
+		float[][] matrix = line(100,100,90,10,50,95,5);
 		BufferedImage image = new BufferedImage(matrix.length,matrix[0].length,BufferedImage.TYPE_3BYTE_BGR);
 	    for(int x=0;x<matrix.length;x++)
 		    for(int y=0;y<matrix[x].length;y++)
@@ -38,7 +38,11 @@ public class Test {
 	    }
 	    int numerator = longest >> 1 ;
 	    for (int i=0;i<=longest;i++) {
-	        result[x][y] = 1;;
+    		for(int r=-radius;r<=radius;r++){
+    			int index = x+r;
+				if(0<=index && index<result.length)
+					result[index][y] = 1f;
+    		}
 	        numerator += shortest ;
 	        if (!(numerator<longest)) {
 	            numerator -= longest ;
@@ -49,15 +53,6 @@ public class Test {
 	            y += dy2 ;
 	        }
 	    }
-	    float[][] finalResult = new float[result.length][result[0].length];
-	    for(x=0;x<result.length;x++)
-		    for(y=0;y<result[x].length;y++)
-		    	if(result[x][y] == 1f)
-		    		for(int r=-radius;r<=radius;r++){
-		    			int index = x+r;
-		    			if(0<=index && index<result.length)
-		    				finalResult[index][y] = 1f;
-		    		}
-	    return finalResult;
+	    return result;
 	}
 }
